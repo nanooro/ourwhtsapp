@@ -5,8 +5,8 @@
   "scope": "/",
   "start_url": "/",
   "name": "OurWhatsApp",
-  "short_name": "OurWhatsApp",
-  "description": "A new WhatsApp clone built with Next.js",
+  "short_name": "OurWA",
+  "description": "A feature-rich WhatsApp clone built with Next.js and Tailwind CSS. This PWA offers a seamless, app-like experience on any device.",
   "icons": [
     {
       "src": "/icon-192x192.svg",
