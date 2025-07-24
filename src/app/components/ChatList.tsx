@@ -2,25 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-
-const ChatListItem = ({ name, message, time, onClick }) => (
-  <div
-    className="flex items-center px-4 py-2 cursor-pointer hover:bg-gray-200"
-    onClick={onClick}
-  >
-    <div className="w-12 h-12 bg-gray-300 rounded-full mr-4"></div>
-    <div className="flex-1">
-      <div className="flex justify-between">
-        <span className="font-semibold">{name}</span>
-        <span className="text-xs text-gray-500">{time}</span>
-      </div>
-      <p className="text-sm text-gray-600 truncate">{message}</p>
-    </div>
-  </div>
-);
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const ChatList = ({ onSelectChat }) => {
   const [chats, setChats] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const fetchChats = async () => {
@@ -42,6 +30,56 @@ const ChatList = ({ onSelectChat }) => {
     fetchChats();
   }, []);
 
+  useEffect(() => {
+    if (searchTerm) {
+      const searchUsers = async () => {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .ilike('username', `%${searchTerm}%`);
+
+        if (error) {
+          console.error('Error searching users:', error);
+        } else {
+          setUsers(data);
+        }
+      };
+
+      searchUsers();
+    } else {
+      setUsers([]);
+    }
+  }, [searchTerm]);
+
+  const handleCreateChat = async (userId) => {
+    const { data, error } = await supabase
+      .from('chats')
+      .insert([{}])
+      .select();
+
+    if (error) {
+      console.error('Error creating chat:', error);
+      return;
+    }
+
+    const newChat = data[0];
+
+    const { data: currentUser } = await supabase.auth.getUser();
+
+    const { error: participantError } = await supabase
+      .from('chat_participants')
+      .insert([
+        { chat_id: newChat.id, user_id: currentUser.user.id },
+        { chat_id: newChat.id, user_id: userId },
+      ]);
+
+    if (participantError) {
+      console.error('Error adding participants:', participantError);
+    } else {
+      onSelectChat(newChat);
+    }
+  };
+
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
     const date = new Date(timestamp);
@@ -49,26 +87,44 @@ const ChatList = ({ onSelectChat }) => {
   }
 
   return (
-    <div className="flex flex-col">
-      <div className="p-4 border-b border-gray-200">
-        <input
-          type="text"
-          placeholder="Search or start new chat"
-          className="w-full px-2 py-1 border border-gray-300 rounded-md"
-        />
-      </div>
-      <div className="flex-1 overflow-y-auto">
-        {chats.map((chat) => (
-          <ChatListItem
-            key={chat.id}
-            name={chat.name || 'Unnamed Chat'}
-            message={chat.messages.length > 0 ? chat.messages[0].content : 'No messages yet'}
-            time={chat.messages.length > 0 ? formatTimestamp(chat.messages[0].created_at) : ''}
-            onClick={() => onSelectChat(chat)}
-          />
-        ))}
-      </div>
-    </div>
+    <Command className="rounded-lg border shadow-md">
+      <CommandInput placeholder="Search or start new chat..." value={searchTerm} onValueChange={setSearchTerm} />
+      <CommandList>
+        <CommandEmpty>No results found.</CommandEmpty>
+        {searchTerm ? (
+          <CommandGroup heading="Users">
+            {users.map((user) => (
+              <CommandItem key={user.id} onSelect={() => handleCreateChat(user.id)}>
+                <Avatar className="mr-2">
+                  <AvatarImage src={user.avatar_url} />
+                  <AvatarFallback>{user.username.charAt(0)}</AvatarFallback>
+                </Avatar>
+                {user.username}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        ) : (
+          <CommandGroup heading="Chats">
+            {chats.map((chat) => (
+              <CommandItem key={chat.id} onSelect={() => onSelectChat(chat)}>
+                <Avatar className="mr-2">
+                  <AvatarFallback>{chat.name ? chat.name.charAt(0) : 'C'}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <p>{chat.name || 'Unnamed Chat'}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {chat.messages.length > 0 ? chat.messages[0].content : 'No messages yet'}
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {chat.messages.length > 0 ? formatTimestamp(chat.messages[0].created_at) : ''}
+                </p>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+      </CommandList>
+    </Command>
   );
 };
 

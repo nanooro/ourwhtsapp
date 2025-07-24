@@ -1,14 +1,21 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-const Message = ({ text, time, sent }) => (
-  <div className={`flex ${sent ? 'justify-end' : 'justify-start'} mb-4`}>
+const Message = ({ text, time, sent, sender }) => (
+  <div className={`flex items-end ${sent ? 'justify-end' : 'justify-start'} mb-4`}>
+    {!sent && (
+      <Avatar className="w-8 h-8 mr-2">
+        <AvatarImage src={sender?.avatar_url} />
+        <AvatarFallback>{sender?.username?.charAt(0)}</AvatarFallback>
+      </Avatar>
+    )}
     <div
-      className={`rounded-lg px-4 py-2 ${sent ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>
+      className={`rounded-lg px-4 py-2 ${sent ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
       <p>{text}</p>
-      <span className="text-xs text-gray-500 float-right mt-1">{time}</span>
+      <span className="text-xs text-muted-foreground float-right mt-1">{time}</span>
     </div>
   </div>
 );
@@ -16,6 +23,7 @@ const Message = ({ text, time, sent }) => (
 const MessageList = ({ chat }) => {
   const [messages, setMessages] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -30,7 +38,7 @@ const MessageList = ({ chat }) => {
       const fetchMessages = async () => {
         const { data, error } = await supabase
           .from('messages')
-          .select('*, profiles(username)')
+          .select('*, profile:profiles(username, avatar_url)')
           .eq('chat_id', chat.id)
           .order('created_at', { ascending: true });
 
@@ -45,8 +53,18 @@ const MessageList = ({ chat }) => {
 
       const subscription = supabase
         .channel(`chat:${chat.id}`)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chat.id}` }, (payload) => {
-          setMessages((prevMessages) => [...prevMessages, payload.new]);
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chat.id}` }, async (payload) => {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('username, avatar_url')
+            .eq('id', payload.new.user_id)
+            .single();
+
+          if (error) {
+            console.error('Error fetching profile for new message:', error);
+          } else {
+            setMessages((prevMessages) => [...prevMessages, { ...payload.new, profile: data }]);
+          }
         })
         .subscribe();
 
@@ -55,6 +73,10 @@ const MessageList = ({ chat }) => {
       };
     }
   }, [chat]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
@@ -70,8 +92,10 @@ const MessageList = ({ chat }) => {
           text={message.content}
           time={formatTimestamp(message.created_at)}
           sent={currentUser?.id === message.user_id}
+          sender={message.profile}
         />
       ))}
+      <div ref={messagesEndRef} />
     </div>
   );
 };

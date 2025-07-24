@@ -2,6 +2,9 @@
 
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Send } from 'lucide-react';
 
 const MessageInput = ({ chat }) => {
   const [message, setMessage] = useState('');
@@ -25,14 +28,17 @@ const MessageInput = ({ chat }) => {
   };
 
   return (
-    <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200">
-      <input
+    <form onSubmit={handleSendMessage} className="p-4 border-t flex items-center">
+      <Input
         type="text"
         placeholder="Type a message"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
-        className="w-full px-2 py-1 border border-gray-300 rounded-md"
+        className="flex-1 mr-2"
       />
+      <Button type="submit" size="icon">
+        <Send className="h-4 w-4" />
+      </Button>
     </form>
   );
 };

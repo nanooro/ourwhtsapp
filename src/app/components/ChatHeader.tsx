@@ -1,13 +1,14 @@
 import React from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-const ChatHeader = ({ name }) => (
-  <div className="flex items-center justify-between p-4 border-b border-gray-200">
+const ChatHeader = ({ name, avatarUrl }) => (
+  <div className="flex items-center justify-between p-4 border-b">
     <div className="flex items-center">
-      <div className="w-10 h-10 bg-gray-300 rounded-full mr-4"></div>
-      <span className="font-semibold">{name}</span>
-    </div>
-    <div>
-      {/* Add icons for search, more options, etc. here */}
+      <Avatar className="w-10 h-10 mr-4">
+        <AvatarImage src={avatarUrl} />
+        <AvatarFallback>{name?.charAt(0)}</AvatarFallback>
+      </Avatar>
+      <h2 className="text-lg font-semibold">{name}</h2>
     </div>
   </div>
 );

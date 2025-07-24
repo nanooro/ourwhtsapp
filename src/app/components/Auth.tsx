@@ -2,6 +2,9 @@
 
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -24,36 +27,35 @@ const Auth = () => {
 
   return (
     <div className="flex items-center justify-center h-screen">
-      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center">{isLogin ? 'Login' : 'Sign Up'}</h2>
-        <div className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-2 border rounded-md"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-2 border rounded-md"
-          />
-        </div>
-        <button
-          onClick={handleAuth}
-          className="w-full px-4 py-2 font-bold text-white bg-blue-500 rounded-md hover:bg-blue-600"
-        >
-          {isLogin ? 'Login' : 'Sign Up'}
-        </button>
-        <p className="text-sm text-center">
-          <a href="#" onClick={() => setIsLogin(!isLogin)} className="text-blue-500 hover:underline">
-            {isLogin ? 'Need an account? Sign up' : 'Have an account? Login'}
-          </a>
-        </p>
-      </div>
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>{isLogin ? 'Login' : 'Sign Up'}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <Input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <Input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <Button onClick={handleAuth} className="w-full mt-4">
+            {isLogin ? 'Login' : 'Sign Up'}
+          </Button>
+          <p className="mt-4 text-sm text-center">
+            <a href="#" onClick={() => setIsLogin(!isLogin)} className="text-blue-500 hover:underline">
+              {isLogin ? 'Need an account? Sign up' : 'Have an account? Login'}
+            </a>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 };
